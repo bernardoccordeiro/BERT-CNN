@@ -12,7 +12,7 @@ from tensorflow.keras.callbacks import TensorBoard
 from keras.utils import to_categorical
 from gensim.models.keyedvectors import KeyedVectors
 from sklearn.model_selection import KFold
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import f1_score, precision_score, recall_score, accuracy_score, confusion_matrix
 from models import create_model_W2V
 
 np.random.RandomState(42)
@@ -130,6 +130,9 @@ for model_name, model_conf in zip(model_names, model_confs):
     precision_scores = []
     recall_scores = []
     f1_scores = []
+    accuracy_scores = []
+    confusion_matrices = []
+    predictions = []
 
     if not has_test_data:
         print('Dataset has no standard train/test split. Performing {}-Fold CV'.format(KFOLD_SIZE))
@@ -149,12 +152,18 @@ for model_name, model_conf in zip(model_names, model_confs):
                                    )
             training_times.append(datetime.now() - current_time)
             predictions_test = np.argmax(model.predict(X_test), axis=1)
+            predictions.append(predictions_test)
+
             precision_scores.append(precision_score(
                 np.argmax(test_labels, axis=1), predictions_test, average='weighted'))
             recall_scores.append(recall_score(
                 np.argmax(test_labels, axis=1), predictions_test, average='weighted'))
             f1_scores.append(f1_score(
                 np.argmax(test_labels, axis=1), predictions_test, average='weighted'))
+            accuracy_scores.append(accuracy_score(
+                np.argmax(test_labels, axis=1), predictions_test))
+            confusion_matrices.append(confusion_matrix(
+                np.argmax(test_labels, axis=1), predictions_test))
             i += 1
     else:
         print('Dataset has a standard train/test split. Using that for test.')
@@ -163,18 +172,32 @@ for model_name, model_conf in zip(model_names, model_confs):
                                          batch_size=BATCH_SIZE, epochs=N_EPOCHS))
         training_times.append(datetime.now() - current_time)
         predictions_test = np.argmax(model.predict(X_test), axis=1)
+        predictions.append(predictions_test)
+
         precision_scores.append(precision_score(
             np.argmax(test_labels, axis=1), predictions_test, average='weighted'))
         recall_scores.append(recall_score(
             np.argmax(test_labels, axis=1), predictions_test, average='weighted'))
         f1_scores.append(f1_score(
             np.argmax(test_labels, axis=1), predictions_test, average='weighted'))
+        accuracy_scores.append(accuracy_score(
+            np.argmax(test_labels, axis=1), predictions_test))
+        confusion_matrices.append(confusion_matrix(
+            np.argmax(test_labels, axis=1), predictions_test))
 
     print('Calculating prediction time...')
     current_time = datetime.now()
     model.predict(X_test)
     prediction_time = datetime.now() - current_time
     avg_prediction_time = prediction_time/len(X_test)
+
+    prediction_file = "{}/{}_{}.predictions".format(
+        OUTPUT_DIR_W2V, DATASET_NAME, model_name
+    )
+    with open(prediction_file, 'wb') as file_predictions:
+        pickle.dump(
+            predictions, file_predictions
+        )
 
     print('Saving {} model'.format(model_name))
     filename = "{}/{}_{}.pickle".format(
@@ -183,6 +206,6 @@ for model_name, model_conf in zip(model_names, model_confs):
     with open(filename, "wb") as file:
         histories = list(map(lambda x: x.history, model_histories))
         pickle.dump([histories, training_times, avg_prediction_time,
-                     precision_scores, recall_scores, f1_scores], file)
+                     precision_scores, recall_scores, f1_scores, accuracy_scores, confusion_matrices], file)
 
 print('Done!')

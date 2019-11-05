@@ -11,7 +11,7 @@ from datetime import datetime
 from models import model_fn_builder
 from tensorflow import set_random_seed
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import recall_score, precision_score, f1_score, accuracy_score
+from sklearn.metrics import recall_score, precision_score, f1_score, accuracy_score, confusion_matrix
 
 if len(sys.argv) != 3:
     sys.exit('Please provide a dataset name and conf!')
@@ -207,6 +207,14 @@ for model_name, model_conf in zip(model_names, model_confs):
         prediction_results = [x['labels'] for x in prediction_results]
         avg_prediction_time = (datetime.now() - current_time)/len(X_test)
 
+        prediction_file = "{}/{}_{}.predictions".format(
+            OUTPUT_DIR, DATASET_NAME, model_name
+        )
+        with open(prediction_file, 'wb') as file_predictions:
+            pickle.dump(
+                prediction_results, file_predictions
+            )
+
         precision = precision_score(
             y_test, prediction_results, average='weighted')
         recall = recall_score(
@@ -214,14 +222,16 @@ for model_name, model_conf in zip(model_names, model_confs):
         f1_score = f1_score(
             y_test, prediction_results, average='weighted')
         accuracy = accuracy_score(y_test, prediction_results)
+        conf_matrix = confusion_matrix(y_test, prediction_results)
         print("Average Prediction time: ", avg_prediction_time)
         print("Precision: {}".format(precision))
         print("Recall: {}".format(recall))
         print("F1: {}".format(f1_score))
         print('Accuracy: {}'.format(accuracy))
+        print('Confusion Matrix: {}'.format(conf_matrix))
 
     filename = "{}/{}_{}.pickle".format(
         OUTPUT_DIR, DATASET_NAME, model_name)
-    with open(filename, 'wb') as file:
+    with open(filename, 'wb') as file_out:
         pickle.dump(
-            [training_time, NUM_TRAIN_EPOCHS, avg_prediction_time, precision, recall, f1_score, accuracy], file)
+            [training_time, NUM_TRAIN_EPOCHS, avg_prediction_time, precision, recall, f1_score, accuracy, conf_matrix], file_out)

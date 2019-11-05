@@ -33,7 +33,7 @@ def load_trec(int_labels=True, get_test_set=True):
     with open('TREC-data/train_5500.label', 'rb') as data_file:
         for line in data_file.readlines():
             label_specific, sentence = str(line).split(' ', 1)
-            label = label_specific.split(':')[0]
+            label = label_specific.split(':')[0][2:]
             sentence = sentence.replace('\n', '')
             if int_labels:
                 if label in labels_dict:
@@ -52,7 +52,7 @@ def load_trec(int_labels=True, get_test_set=True):
     with open('TREC-data/TREC_10.label', 'rb') as test_file:
         for line in test_file.readlines():
             label_specific, sentence = str(line).split(' ', 1)
-            label = label_specific.split(':')[0]
+            label = label_specific.split(':')[0][2:]
             sentence = sentence.replace('\n', '')
             if int_labels:
                 label = labels_dict[label]
@@ -67,7 +67,7 @@ def load_trec(int_labels=True, get_test_set=True):
         return train_data, labels
 
 def load_portuguese_twitter():
-    data = pd.read_csv('PortTwitter/unbalanced_corpus/corpus_four_class_unbalanced/tweets-total-csv-4-class-unbalanced.csv', 
+    data = pd.read_csv('PortTwitter/unbalanced_corpus/corpus_three_class_unbalanced/tweets-total-csv-3-class-unbalanced.csv', 
         sep=';', encoding='latin')
     train_data = data['tweet'].values
     labels = pd.factorize(data['OPINIAO'])[0]
